@@ -17,10 +17,13 @@ RUN addgroup --gid ${USER_GID} ${USER_GROUP} && \
   adduser --uid ${USER_UID} --gid ${USER_GID} --disabled-password --gecos "" ${USER_NAME} && \
   usermod -aG sudo ${USER_NAME}
 
+RUN echo 'root:12345' | chpasswd
+
 RUN apt-get update
 RUN apt-get install -y gcc g++ gfortran binutils make \
   libx11-dev libxft-dev libxext-dev python-dev libxpm4 \
-  libxpm-dev libafterimage-dev
+  libxpm-dev libafterimage-dev \
+  less
 
 RUN cd /opt/root && \
   ./configure --disable-builtin-afterimage \
@@ -42,8 +45,17 @@ COPY ConfigFileParser.cc /home/${USER_NAME}/${ESAFDIR_NAME}/packages/common/base
 COPY NumbersFileParser.cc /home/${USER_NAME}/${ESAFDIR_NAME}/packages/common/base/src
 RUN /bin/bash -c "cd /home/${USER_NAME}/${ESAFDIR_NAME} && source /opt/root/bin/thisroot.sh && source thisesaf.sh && make -j${THREADS}" 
 
+USER root
+
+RUN chmod 0744 /home/${USER_NAME}/${ESAFDIR_NAME}/output
+RUN chown -R ${USER_NAME}:${USER_NAME}  /home/${USER_NAME}/${ESAFDIR_NAME}
+
+USER ${USER_NAME}
+
+RUN bash -c 'echo -e "\nsource /opt/root/bin/thisroot.sh\nsource /home/${USER_NAME}/${ESAFDIR_NAME}/thisesaf.sh\n" >> /home/${USER_NAME}/.bashrc'
+
 ENV HOME /home/${USER_NAME}
-WORKDIR /home/{$USER_NAME}/${ESAFDIR_NAME}
+WORKDIR /home/${USER_NAME}/${ESAFDIR_NAME}
 
 CMD /bin/bash
 
